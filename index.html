@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#d9828a"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BakeMate — Home Bakery Manager</title>
+<style>
+:root{--pink:#d9828a;--pink2:#f4c8ca;--cream:#fff8f4;--ink:#4b302d;--muted:#8b716d;--card:#fffdfb;--line:#f0deda;--green:#dff1df;--orange:#ffe6c8}
+*{box-sizing:border-box}body{margin:0;background:#eadfdb;font-family:Arial,sans-serif;color:var(--ink)}
+.app{max-width:430px;margin:auto;min-height:100vh;background:var(--cream);position:relative;padding-bottom:78px}
+header{padding:22px 18px 10px;background:linear-gradient(#fff2ef,#fff8f4)}
+h1,h2,h3,p{margin:0}h1{font-size:24px}.sub{font-size:13px;color:var(--muted);margin-top:5px}
+.page{display:none;padding:14px 16px}.page.active{display:block}
+.search{width:100%;border:1px solid var(--line);background:white;border-radius:24px;padding:12px 16px;outline:none;margin:10px 0 14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 3px 10px #6b403008}
+.stat b{font-size:20px;display:block;margin-top:5px}.muted{color:var(--muted);font-size:12px}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.quick button{padding:10px 4px;font-size:11px}
+button{border:0;border-radius:14px;background:var(--pink);color:white;padding:11px 14px;font-weight:700;cursor:pointer}.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}.danger{background:#b95c66}
+.section{display:flex;justify-content:space-between;align-items:center;margin:16px 0 9px}
+.item{display:flex;gap:10px;align-items:center;background:white;border:1px solid var(--line);border-radius:15px;padding:11px;margin-bottom:8px}
+.pic{width:48px;height:48px;border-radius:12px;background:#f8ded9;display:grid;place-items:center;font-size:25px}
+.item .grow{flex:1}.price{font-weight:800}.tag{display:inline-block;border-radius:20px;padding:4px 8px;font-size:10px;margin-top:4px;background:var(--orange)}.paid{background:var(--green)}
+.tabs{display:flex;gap:6px;overflow:auto;margin-bottom:12px}.tabs button{white-space:nowrap;padding:8px 12px;font-size:12px}.tabs .ghost{background:white}
+form label{font-size:12px;color:var(--muted);display:block;margin:10px 0 5px}input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:white;outline:none;font:inherit;color:var(--ink)}textarea{min-height:80px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.full{width:100%;margin-top:14px}.back{background:transparent;color:var(--ink);padding:4px 0;margin-bottom:8px}
+.empty{text-align:center;padding:30px 10px;color:var(--muted)}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:430px;width:100%;height:68px;background:#fffdfc;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);z-index:10}
+nav button{background:transparent;color:var(--muted);border-radius:0;padding:7px 2px;font-size:10px}nav button.active{color:var(--pink);font-weight:800}
+.toast{position:fixed;left:50%;bottom:82px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:12px;display:none;z-index:20}
+.logo{font-size:34px;font-weight:800;font-style:italic}.logo span{color:var(--pink)}
+.smallbtn{padding:7px 10px;font-size:11px}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo">Bake<span>Mate</span> 🎀</div>
+  <div class="sub">Your home bakery, organized. 🧁</div>
+</header>
+
+<section id="home" class="page active">
+  <input class="search" placeholder="Search your bakery..." oninput="homeSearch(this.value)">
+  <div class="grid">
+    <div class="stat">💰 <span class="muted">Sales Today</span><b id="sales">₱0</b></div>
+    <div class="stat">🧁 <span class="muted">Orders Today</span><b id="orderCount">0</b></div>
+    <div class="stat">💵 <span class="muted">Est. Profit</span><b id="profit">₱0</b></div>
+    <div class="stat">📦 <span class="muted">Low Stock</span><b id="lowStock">0</b></div>
+  </div>
+  <div class="card" style="margin-top:12px;text-align:center;font-style:italic">“Good food brings people together.” ♡</div>
+  <div class="section"><h3>Quick Actions</h3></div>
+  <div class="quick">
+    <button onclick="showPage('orders');openOrder()">🧾<br>New Order</button>
+    <button onclick="showPage('recipes');openRecipe()">👩‍🍳<br>Costing</button>
+    <button onclick="showPage('inventory')">📦<br>Inventory</button>
+    <button onclick="showPage('customers');openCustomer()">👥<br>Customers</button>
+  </div>
+  <div class="section"><h3>Upcoming Orders</h3></div>
+  <div id="homeOrders"></div>
+</section>
+
+<section id="orders" class="page">
+  <div class="section"><h2>Orders</h2><button class="smallbtn" onclick="openOrder()">＋ Add</button></div>
+  <input class="search" placeholder="Search orders..." oninput="renderOrders(this.value)">
+  <div class="tabs"><button onclick="setOrderFilter('all')">All</button><button class="ghost" onclick="setOrderFilter('Pending')">Pending</button><button class="ghost" onclick="setOrderFilter('Paid')">Paid</button><button class="ghost" onclick="setOrderFilter('Completed')">Completed</button></div>
+  <div id="ordersList"></div>
+</section>
+
+<section id="orderForm" class="page">
+  <button class="back" onclick="showPage('orders')">← Back</button><h2>New Order 💕</h2>
+  <form onsubmit="saveOrder(event)">
+    <label>Customer</label><input id="oCustomer" required placeholder="Customer name">
+    <label>Product</label><input id="oProduct" required placeholder="e.g. Chocolate Cake">
+    <div class="row"><div><label>Quantity</label><input id="oQty" type="number" min="1" value="1" required></div><div><label>Price (₱)</label><input id="oPrice" type="number" min="0" step=".01" required></div></div>
+    <div class="row"><div><label>Pickup / Delivery</label><input id="oDate" type="date" required></div><div><label>Status</label><select id="oStatus"><option>Pending</option><option>Paid</option><option>Completed</option></select></div></div>
+    <label>Notes</label><textarea id="oNotes" placeholder="Message, flavor, design, etc."></textarea>
+    <button class="full">Save Order 🧁</button>
+  </form>
+</section>
+
+<section id="recipes" class="page">
+  <div class="section"><h2>Recipe Costing</h2><button class="smallbtn" onclick="openRecipe()">＋ Add</button></div>
+  <input class="search" placeholder="Search recipes..." oninput="renderRecipes(this.value)">
+  <div id="recipesList"></div>
+</section>
+
+<section id="recipeForm" class="page">
+  <button class="back" onclick="showPage('recipes')">← Back</button><h2>Add Recipe 👩‍🍳</h2>
+  <form onsubmit="saveRecipe(event)">
+    <label>Recipe Name</label><input id="rName" required placeholder="e.g. Chocolate Cake">
+    <label>Ingredients</label>
+    <div id="ingredientRows"></div>
+    <button type="button" class="ghost full" onclick="addIngredient()">＋ Add Ingredient</button>
+    <div class="card" style="margin-top:12px">Total Recipe Cost: <b id="recipeTotal">₱0.00</b><br><span class="muted">Suggested price uses a 40% margin.</span><br>Suggested Selling Price: <b id="recipeSRP">₱0.00</b></div>
+    <button class="full">Save Recipe 🧁</button>
+  </form>
+</section>
+
+<section id="inventory" class="page">
+  <div class="section"><h2>Inventory</h2><button class="smallbtn" onclick="addInventory()">＋ Add</button></div>
+  <input class="search" placeholder="Search ingredients..." oninput="renderInventory(this.value)">
+  <div class="tabs"><button>All</button></div><div id="inventoryList"></div>
+</section>
+
+<section id="customers" class="page">
+  <div class="section"><h2>Customers</h2><button class="smallbtn" onclick="openCustomer()">＋ Add</button></div>
+  <input class="search" placeholder="Search customers..." oninput="renderCustomers(this.value)">
+  <div id="customersList"></div>
+</section>
+
+<section id="customerForm" class="page">
+  <button class="back" onclick="showPage('customers')">← Back</button><h2>New Customer 👩‍🍳</h2>
+  <form onsubmit="saveCustomer(event)">
+    <label>Name</label><input id="cName" required placeholder="Full name">
+    <label>Phone</label><input id="cPhone" placeholder="09xx xxx xxxx">
+    <label>Notes</label><textarea id="cNotes" placeholder="Favorite flavors, allergies, etc."></textarea>
+    <button class="full">Save Customer 💕</button>
+  </form>
+</section>
+
+<nav>
+ <button onclick="showPage('home')" data-page="home">🏠<br>Home</button>
+ <button onclick="showPage('orders')" data-page="orders">🧾<br>Orders</button>
+ <button onclick="showPage('recipes')" data-page="recipes">👩‍🍳<br>Recipes</button>
+ <button onclick="showPage('inventory')" data-page="inventory">📦<br>Inventory</button>
+ <button onclick="showPage('customers')" data-page="customers">👥<br>Customers</button>
+</nav>
+<div id="toast" class="toast"></div>
+</div>
+
+<script>
+const KEY='bakemate_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
+ orders:[{id:1001,customer:'Jane Dela Cruz',product:'Chocolate Cake',qty:1,price:850,date:'2026-09-16',status:'Pending',notes:''}],
+ recipes:[{name:'Chocolate Cake',cost:320,srp:650},{name:'Vanilla Cupcakes',cost:180,srp:360},{name:'Ube Cake',cost:280,srp:600}],
+ inventory:[{name:'Flour',unit:'kg',qty:2,low:3},{name:'Sugar',unit:'kg',qty:1,low:2},{name:'Butter',unit:'kg',qty:.5,low:1},{name:'Eggs',unit:'pcs',qty:10,low:15},{name:'Chocolate Chips',unit:'kg',qty:.8,low:1},{name:'Baking Powder',unit:'pcs',qty:2,low:1}],
+ customers:[{name:'Jane Dela Cruz',phone:'0917 123 4567',orders:1},{name:'Mark Santos',phone:'0918 234 5678',orders:0}]
+};
+function persist(){localStorage.setItem(KEY,JSON.stringify(db));updateStats()}
+function peso(n){return '₱'+Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:0,maximumFractionDigits:2})}
+function showPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');let base=id.includes('Form')?({orderForm:'orders',recipeForm:'recipes',customerForm:'customers'}[id]):id;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===base));if(id==='home')renderHome();if(id==='orders')renderOrders();if(id==='recipes')renderRecipes();if(id==='inventory')renderInventory();if(id==='customers')renderCustomers()}
+function toast(t){let x=document.getElementById('toast');x.textContent=t;x.style.display='block';setTimeout(()=>x.style.display='none',1800)}
+function updateStats(){let sales=db.orders.filter(o=>o.date===new Date().toISOString().slice(0,10)).reduce((s,o)=>s+o.price*o.qty,0);let profit=sales*.46;document.getElementById('sales').textContent=peso(sales);document.getElementById('orderCount').textContent=db.orders.filter(o=>o.date===new Date().toISOString().slice(0,10)).length;document.getElementById('profit').textContent=peso(profit);document.getElementById('lowStock').textContent=db.inventory.filter(i=>i.qty<=i.low).length}
+function renderHome(){updateStats();document.getElementById('homeOrders').innerHTML=db.orders.slice(0,4).map(orderHTML).join('')||'<div class="empty">No orders yet.</div>'}
+function orderHTML(o){return `<div class="item"><div class="pic">🧁</div><div class="grow"><b>#${o.id} · ${esc(o.product)}</b><div class="muted">${esc(o.customer)} · ${o.date}</div><span class="tag ${o.status==='Paid'||o.status==='Completed'?'paid':''}">${o.status}</span></div><div class="price">${peso(o.price*o.qty)}</div></div>`}
+let orderFilter='all';function setOrderFilter(f){orderFilter=f;renderOrders()}
+function renderOrders(q=''){let a=db.orders.filter(o=>orderFilter==='all'||o.status===orderFilter).filter(o=>(o.customer+' '+o.product).toLowerCase().includes(q.toLowerCase()));document.getElementById('ordersList').innerHTML=a.map(orderHTML).join('')||'<div class="empty">No matching orders.</div>'}
+function openOrder(){showPage('orderForm');document.getElementById('oDate').value=new Date().toISOString().slice(0,10)}
+function saveOrder(e){e.preventDefault();let o={id:Date.now().toString().slice(-4),customer:oCustomer.value,product:oProduct.value,qty:+oQty.value,price:+oPrice.value,date:oDate.value,status:oStatus.value,notes:oNotes.value};db.orders.unshift(o);let c=db.customers.find(x=>x.name.toLowerCase()===o.customer.toLowerCase());if(c)c.orders=(c.orders||0)+1;persist();toast('Order saved! 🧁');showPage('orders')}
+function renderRecipes(q=''){let a=db.recipes.filter(r=>r.name.toLowerCase().includes(q.toLowerCase()));document.getElementById('recipesList').innerHTML=a.map(r=>`<div class="item"><div class="pic">🎂</div><div class="grow"><b>${esc(r.name)}</b><div class="muted">Cost: ${peso(r.cost)} · SRP: ${peso(r.srp)}</div></div><div class="price">${peso(r.srp)}</div></div>`).join('')||'<div class="empty">No recipes yet.</div>'}
+function openRecipe(){showPage('recipeForm');document.getElementById('rName').value='';document.getElementById('ingredientRows').innerHTML='';addIngredient();calcRecipe()}
+function addIngredient(){let d=document.createElement('div');d.className='row';d.style.marginBottom='7px';d.innerHTML='<input class="ingName" placeholder="Ingredient"><input class="ingCost" type="number" min="0" step=".01" placeholder="Cost ₱" oninput="calcRecipe()">';document.getElementById('ingredientRows').appendChild(d)}
+function calcRecipe(){let total=[...document.querySelectorAll('.ingCost')].reduce((s,x)=>s+(+x.value||0),0);document.getElementById('recipeTotal').textContent=peso(total);document.getElementById('recipeSRP').textContent=peso(total/.6)}
+function saveRecipe(e){e.preventDefault();let cost=[...document.querySelectorAll('.ingCost')].reduce((s,x)=>s+(+x.value||0),0);db.recipes.unshift({name:rName.value,cost,srp:cost/.6});persist();toast('Recipe saved! 🎀');showPage('recipes')}
+function renderInventory(q=''){let a=db.inventory.filter(i=>i.name.toLowerCase().includes(q.toLowerCase()));document.getElementById('inventoryList').innerHTML=a.map(i=>`<div class="item"><div class="pic">📦</div><div class="grow"><b>${esc(i.name)}</b><div class="muted">Stock: ${i.qty} ${i.unit}</div></div><span class="tag ${i.qty>i.low?'paid':''}">${i.qty<=i.low?'Low Stock':'In Stock'}</span></div>`).join('')||'<div class="empty">No ingredients yet.</div>'}
+function addInventory(){let n=prompt('Ingredient name:');if(!n)return;let qty=+prompt('Current quantity:')||0;let unit=prompt('Unit (kg, pcs, etc.):','pcs')||'pcs';let low=+prompt('Low-stock level:',1)||1;db.inventory.push({name:n,qty,unit,low});persist();renderInventory();toast('Inventory added! 📦')}
+function renderCustomers(q=''){let a=db.customers.filter(c=>(c.name+' '+c.phone).toLowerCase().includes(q.toLowerCase()));document.getElementById('customersList').innerHTML=a.map(c=>`<div class="item"><div class="pic">${esc(c.name.split(' ').map(x=>x[0]).slice(0,2).join(''))}</div><div class="grow"><b>${esc(c.name)}</b><div class="muted">${esc(c.phone||'No phone')} · ${c.orders||0} orders</div></div>›</div>`).join('')||'<div class="empty">No customers yet.</div>'}
+function openCustomer(){showPage('customerForm');cName.value='';cPhone.value='';cNotes.value=''}
+function saveCustomer(e){e.preventDefault();db.customers.push({name:cName.value,phone:cPhone.value,notes:cNotes.value,orders:0});persist();toast('Customer saved! 💕');showPage('customers')}
+function homeSearch(v){/* dashboard search is intentionally lightweight */}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+updateStats();renderHome();
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("./sw.js").catch(()=>{});}</script></body>
+</html>
